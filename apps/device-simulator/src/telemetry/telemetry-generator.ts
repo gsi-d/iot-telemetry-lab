@@ -1,5 +1,8 @@
 import type { Telemetry } from "@iot/contracts";
-import type { Device, SensorRange } from "../devices/device.types.js";
+import type {
+  Device,
+  SensorRange
+} from "@iot/device-catalog";
 
 const ANOMALY_PROBABILITY = 0.05;
 

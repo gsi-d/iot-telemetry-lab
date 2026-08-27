@@ -1,14 +1,15 @@
 {
-  "name": "@iot/contracts",
+  "name": "@iot/device-catalog",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "main": "./dist/index.js",
-"types": "./dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
   "dependencies": {
-    "zod": "^4.0.0"
+    "@iot/contracts": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

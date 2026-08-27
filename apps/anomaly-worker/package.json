@@ -1,5 +1,5 @@
 {
-  "name": "@iot/device-simulator",
+  "name": "@iot/anomaly-worker",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@iot/contracts": "*",
-    "@iot/device-catalog": "*"
+    "@iot/device-catalog": "*",
+    "amqplib": "^2.0.1"
   },
   "devDependencies": {
     "tsx": "^4.0.0",

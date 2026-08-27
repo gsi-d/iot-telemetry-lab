@@ -9,11 +9,19 @@
   "scripts": {
     "build:contracts": "npm run build --workspace=@iot/contracts",
 
-    "dev:api": "npm run build:contracts && npm run dev --workspace=@iot/ingestion-api",
+    "build:catalog": "npm run build:contracts && npm run build --workspace=@iot/device-catalog",
 
-    "dev:simulator": "npm run build:contracts && npm run dev --workspace=@iot/device-simulator",
+    "build:shared": "npm run build:contracts && npm run build --workspace=@iot/device-catalog",
 
-    "dev:worker": "npm run build:contracts && npm run dev --workspace=@iot/telemetry-worker",
+    "dev:api": "npm run build:shared && npm run dev --workspace=@iot/ingestion-api",
+
+    "dev:simulator": "npm run build:shared && npm run dev --workspace=@iot/device-simulator",
+
+    "dev:worker": "npm run build:shared && npm run dev --workspace=@iot/telemetry-worker",
+
+    "dev:anomaly": "npm run build:shared && npm run dev --workspace=@iot/anomaly-worker",
+
+    "dev:alerts": "npm run build:shared && npm run dev --workspace=@iot/alert-worker",
 
     "build": "npm run build --workspaces"
   }

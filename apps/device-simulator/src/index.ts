@@ -1,5 +1,5 @@
 import type { Telemetry } from "@iot/contracts";
-import { devices } from "./devices/devices.js";
+import { devices } from "@iot/device-catalog";
 import { generateDeviceTelemetry } from "./telemetry/telemetry-generator.js";
 
 const API_URL = "http://localhost:3000";

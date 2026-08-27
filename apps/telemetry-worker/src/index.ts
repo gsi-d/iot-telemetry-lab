@@ -16,6 +16,15 @@ const TELEMETRY_EXCHANGE =
   const TELEMETRY_BINDING =
   "telemetry.#";
 
+  const DEAD_LETTER_EXCHANGE =
+  "dead-letter.events";
+
+const DEAD_LETTER_QUEUE =
+  "telemetry.processing.dlq";
+
+const DEAD_LETTER_ROUTING_KEY =
+  "telemetry.processing.failed";
+
 async function processTelemetry(
   telemetry: Telemetry
 ): Promise<void> {
@@ -36,6 +45,29 @@ async function start(): Promise<void> {
   const channel =
     await connection.createChannel();
 
+    await channel.prefetch(10);
+
+    await channel.assertExchange(
+      DEAD_LETTER_EXCHANGE,
+      "direct",
+      {
+        durable: true
+      }
+    );
+
+    await channel.assertQueue(
+      DEAD_LETTER_QUEUE,
+      {
+        durable: true
+      }
+    );
+
+    await channel.bindQueue(
+      DEAD_LETTER_QUEUE,
+      DEAD_LETTER_EXCHANGE,
+      DEAD_LETTER_ROUTING_KEY
+    );
+
     await channel.assertExchange(
     TELEMETRY_EXCHANGE,
     "topic",
@@ -47,7 +79,14 @@ async function start(): Promise<void> {
   await channel.assertQueue(
     TELEMETRY_QUEUE,
     {
-      durable: true
+      durable: true,
+      arguments: {
+        "x-dead-letter-exchange":
+          DEAD_LETTER_EXCHANGE,
+
+        "x-dead-letter-routing-key":
+          DEAD_LETTER_ROUTING_KEY
+      }
     }
   );
 

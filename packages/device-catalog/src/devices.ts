@@ -1,4 +1,5 @@
-import type { Device } from "./device.types.js";
+import { Device } from "./types.js";
+
 
 export const devices: Device[] = [
   {
