@@ -8,8 +8,13 @@
   ],
   "scripts": {
     "build:contracts": "npm run build --workspace=@iot/contracts",
+
     "dev:api": "npm run build:contracts && npm run dev --workspace=@iot/ingestion-api",
+
     "dev:simulator": "npm run build:contracts && npm run dev --workspace=@iot/device-simulator",
+
+    "dev:worker": "npm run build:contracts && npm run dev --workspace=@iot/telemetry-worker",
+
     "build": "npm run build --workspaces"
   }
 }
