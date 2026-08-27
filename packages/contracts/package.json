@@ -1,0 +1,16 @@
+{
+  "name": "@iot/contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/telemetry.js",
+  "types": "./dist/telemetry.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "iot-telemetry-lab",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:contracts": "npm run build --workspace=@iot/contracts",
+    "dev:api": "npm run build:contracts && npm run dev --workspace=@iot/ingestion-api",
+    "dev:simulator": "npm run build:contracts && npm run dev --workspace=@iot/device-simulator",
+    "build": "npm run build --workspaces"
+  }
+}
