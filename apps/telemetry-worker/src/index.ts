@@ -8,7 +8,13 @@ const RABBITMQ_URL =
   process.env.RABBITMQ_URL ??
   "amqp://guest:guest@localhost:5672";
 
-const TELEMETRY_QUEUE = "telemetry.raw";
+const TELEMETRY_QUEUE = "telemetry.processing";
+
+const TELEMETRY_EXCHANGE =
+  "telemetry.events";
+
+  const TELEMETRY_BINDING =
+  "telemetry.#";
 
 async function processTelemetry(
   telemetry: Telemetry
@@ -30,6 +36,14 @@ async function start(): Promise<void> {
   const channel =
     await connection.createChannel();
 
+    await channel.assertExchange(
+    TELEMETRY_EXCHANGE,
+    "topic",
+    {
+      durable: true
+    }
+  );
+
   await channel.assertQueue(
     TELEMETRY_QUEUE,
     {
@@ -37,8 +51,14 @@ async function start(): Promise<void> {
     }
   );
 
+  await channel.bindQueue(
+    TELEMETRY_QUEUE,
+    TELEMETRY_EXCHANGE,
+    TELEMETRY_BINDING
+  );
+
   console.log(
-    `Waiting for messages on ${TELEMETRY_QUEUE}`
+    `Waiting for ${TELEMETRY_BINDING} on ${TELEMETRY_QUEUE}`
   );
 
   await channel.consume(
@@ -49,6 +69,9 @@ async function start(): Promise<void> {
       }
 
       try {
+        const routingKey =
+          message.fields.routingKey;
+
         const content =
           message.content.toString();
 
@@ -57,6 +80,10 @@ async function start(): Promise<void> {
 
         const telemetry =
           telemetrySchema.parse(data);
+
+        console.log(
+          `Routing key: ${routingKey}`
+        );
 
         await processTelemetry(
           telemetry

@@ -7,6 +7,9 @@ const RABBITMQ_URL =
 
 const TELEMETRY_QUEUE = "telemetry.raw";
 
+const TELEMETRY_EXCHANGE =
+  "telemetry.events";
+
 let connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
 let channel: Awaited<ReturnType<typeof createChannel>> | null = null;
 
@@ -31,12 +34,18 @@ export async function connectRabbitMQ(): Promise<void> {
 
   channel = await createChannel();
 
-  // Criação da fila no rabbitmq
-  await channel.assertQueue(TELEMETRY_QUEUE, {
-    durable: true
-  });
+  // Criação da exchange no rabbitmq
+  await channel.assertExchange(
+    TELEMETRY_EXCHANGE,
+    "topic",
+    {
+      durable: true
+    }
+  );
 
-  console.log("Connected to RabbitMQ");
+  console.log(
+    `Connected to RabbitMQ - exchange: ${TELEMETRY_EXCHANGE}`
+  );
 }
 
 export function publishTelemetry(
@@ -46,12 +55,16 @@ export function publishTelemetry(
     throw new Error("RabbitMQ channel is not initialized");
   }
 
+  const routingKey =
+    `telemetry.${telemetry.type}`;
+
   const message = Buffer.from(
     JSON.stringify(telemetry)
   );
 
-  channel.sendToQueue(
-    TELEMETRY_QUEUE,
+  channel.publish(
+    TELEMETRY_EXCHANGE,
+    routingKey,
     message,
     {
       persistent: true,
