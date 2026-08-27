@@ -1,9 +1,14 @@
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { telemetrySchema } from "@iot/contracts";
+import { publishTelemetry } from "../messaging/rabbitmq.js";
 
-export async function telemetryRoutes(app: FastifyInstance) {
+export async function telemetryRoutes(
+  app: FastifyInstance
+) {
   app.post("/telemetry", async (request, reply) => {
-    const result = telemetrySchema.safeParse(request.body);
+    const result = telemetrySchema.safeParse(
+      request.body
+    );
 
     if (!result.success) {
       return reply.status(400).send({
@@ -23,6 +28,8 @@ export async function telemetryRoutes(app: FastifyInstance) {
       },
       "Telemetry received"
     );
+
+    publishTelemetry(telemetry);
 
     return reply.status(202).send({
       message: "Telemetry accepted"

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { telemetryRoutes } from "./routes/telemetry.js";
+import { connectRabbitMQ } from "./messaging/rabbitmq.js";
 
 const app = Fastify({
   logger: true
@@ -11,6 +12,8 @@ app.get("/health", async () => {
   };
 });
 
+await connectRabbitMQ();
+
 await app.register(telemetryRoutes);
 
 try {
@@ -19,7 +22,9 @@ try {
     host: "0.0.0.0"
   });
 
-  app.log.info("Ingestion API running on port 3000");
+  app.log.info(
+    "Ingestion API running on port 3000"
+  );
 } catch (error) {
   app.log.error(error);
   process.exit(1);
