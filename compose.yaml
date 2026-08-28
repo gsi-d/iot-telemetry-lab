@@ -20,6 +20,20 @@ services:
             interval: 10s
             timeout: 5s
             retries: 5
+    otel-collector:
+        image: otel/opentelemetry-collector-contrib:0.159.0
+        container_name: iot-otel-collector
+        restart: unless-stopped
+
+        command:
+        - "--config=/etc/otelcol-contrib/config.yaml"
+
+        volumes:
+        - ./infra/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+
+        ports:
+        - "4317:4317"
+        - "4318:4318"
 
 volumes:
     rabbitmq_data:
