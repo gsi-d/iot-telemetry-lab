@@ -3,6 +3,12 @@ import {
   telemetrySchema,
   type Telemetry
 } from "@iot/contracts";
+import { trace } from "@opentelemetry/api";
+import {
+  telemetryProcessedCounter,
+  telemetryProcessingErrorCounter,
+} from "./observability/metrics.js";
+import { logger } from "./observability/logger.js";
 
 const RABBITMQ_URL =
   process.env.RABBITMQ_URL ??
@@ -107,6 +113,13 @@ async function start(): Promise<void> {
         return;
       }
 
+      const activeSpan = trace.getActiveSpan();
+
+      const traceId =
+        activeSpan?.spanContext().traceId ?? "no-active-trace";
+
+      
+
       try {
         const routingKey =
           message.fields.routingKey;
@@ -120,6 +133,15 @@ async function start(): Promise<void> {
         const telemetry =
           telemetrySchema.parse(data);
 
+          logger.info(
+            {
+              deviceId: telemetry.deviceId,
+              telemetryType: telemetry.type,
+              telemetryValue: telemetry.value,
+            },
+            "Processing telemetry",
+          );
+
         console.log(
           `Routing key: ${routingKey}`
         );
@@ -128,11 +150,26 @@ async function start(): Promise<void> {
           telemetry
         );
 
+        telemetryProcessedCounter.add(1, {
+          "telemetry.type": telemetry.type,
+        });
+
+        logger.info(
+          {
+            deviceId: telemetry.deviceId,
+            telemetryType: telemetry.type,
+          },
+          "Telemetry processed successfully",
+        );
+
         channel.ack(message); // Indica que a mensagem foi processada e pode ser removida da fila
       } catch (error) {
-        console.error(
+        telemetryProcessingErrorCounter.add(1);
+        logger.error(
+          {
+            err: error,
+          },
           "Failed to process telemetry",
-          error
         );
 
         // Informa ao rabbitmq que a mensagem falhou e que não deve ser removida da fila

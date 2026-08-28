@@ -11,6 +11,8 @@ import {
   devices,
   type SensorRange
 } from "@iot/device-catalog";
+import { anomalyDetectedCounter, anomalyProcessedCounter } from "./observability/metrics.js";
+import { logger } from "./observability/logger.js";
 
 const RABBITMQ_URL =
   process.env.RABBITMQ_URL ??
@@ -195,6 +197,15 @@ async function start(): Promise<void> {
         const telemetry =
           telemetrySchema.parse(data);
 
+          logger.info(
+            {
+              deviceId: telemetry.deviceId,
+              telemetryType: telemetry.type,
+              telemetryValue: telemetry.value,
+            },
+            "Analyzing telemetry for anomaly",
+          );
+
         const sensor =
           findSensorRule(telemetry);
 
@@ -211,6 +222,8 @@ async function start(): Promise<void> {
 
           return;
         }
+
+         anomalyProcessedCounter.add(1);
 
         if (
           !isAnomaly(
@@ -245,6 +258,17 @@ async function start(): Promise<void> {
               contentType: "application/json"
             }
           );
+
+        anomalyDetectedCounter.add(1);
+
+        logger.warn(
+          {
+            deviceId: telemetry.deviceId,
+            telemetryType: telemetry.type,
+            telemetryValue: telemetry.value,
+          },
+          "Anomaly detected",
+        );
 
         console.log(
           `ALERT ${alert.severity}: ${alert.deviceId} ${alert.telemetryType}=${alert.value}`

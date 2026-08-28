@@ -3,6 +3,8 @@ import amqp from "amqplib";
 import {
   alertCreatedSchema
 } from "@iot/contracts";
+import { alertProcessedCounter, alertProcessingErrorCounter, alertSentCounter } from "./observability/metrics.js";
+import { logger } from "./observability/logger.js";
 
 const RABBITMQ_URL =
   process.env.RABBITMQ_URL ??
@@ -91,6 +93,7 @@ async function start(): Promise<void> {
       if (!message) {
         return;
       }
+      let deviceId;
 
       try {
         const content =
@@ -103,6 +106,15 @@ async function start(): Promise<void> {
             content
           );
 
+          deviceId = alert.deviceId;
+
+          logger.info(
+            {
+              deviceId: deviceId,
+            },
+            "Processing alert",
+          );
+
         console.log(
           "================================="
         );
@@ -112,7 +124,7 @@ async function start(): Promise<void> {
         );
 
         console.log(
-          `Device: ${alert.deviceId}`
+          `Device: ${deviceId}`
         );
 
         console.log(
@@ -131,11 +143,27 @@ async function start(): Promise<void> {
           "================================="
         );
 
+        alertProcessedCounter.add(1);
+        alertSentCounter.add(1);
+
+        logger.info(
+          {
+            deviceId: deviceId,
+          },
+          "Alert sent successfully",
+        );
+
         channel.ack(message);
       } catch (error) {
-        console.error(
-          "Failed to process alert:",
-          error
+        alertProcessedCounter.add(1);
+        alertProcessingErrorCounter.add(1);
+
+        logger.error(
+          {
+            err: error,
+            deviceId: deviceId,
+          },
+          "Failed to send alert",
         );
 
         channel.nack(

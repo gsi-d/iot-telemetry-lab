@@ -2,7 +2,9 @@ import type { Telemetry } from "@iot/contracts";
 import { devices } from "@iot/device-catalog";
 import { generateDeviceTelemetry } from "./telemetry/telemetry-generator.js";
 
-const API_URL = "http://localhost:3000";
+const API_URL =
+  process.env.INGESTION_API_URL ??
+  "http://localhost:3001";
 
 async function sendTelemetry(
   telemetry: Telemetry

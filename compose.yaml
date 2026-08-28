@@ -1,39 +1,179 @@
 services:
-    rabbitmq:
-        image: rabbitmq:4-management
-        container_name: iot-rabbitmq
-        hostname: rabbitmq
 
-        ports:
-            - "5672:5672"
-            - "15672:15672"
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: iot-rabbitmq
+    restart: unless-stopped
 
-        environment:
-            RABBITMQ_DEFAULT_USER: guest
-            RABBITMQ_DEFAULT_PASS: guest
-        
-        volumes:
-            - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
-        healthcheck:
-            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-    otel-collector:
-        image: otel/opentelemetry-collector-contrib:0.159.0
-        container_name: iot-otel-collector
-        restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
-        command:
-        - "--config=/etc/otelcol-contrib/config.yaml"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
-        volumes:
-        - ./infra/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-        ports:
-        - "4317:4317"
-        - "4318:4318"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.159.0
+    container_name: iot-otel-collector
+    restart: unless-stopped
+
+    command:
+      - "--config=/etc/otelcol-contrib/config.yaml"
+
+    volumes:
+      - ./infra/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+
+  ingestion-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: iot-ingestion-api
+    restart: unless-stopped
+
+    environment:
+      APP_NAME: ingestion-api
+
+      PORT: "3001"
+
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+    ports:
+      - "3001:3001"
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+      otel-collector:
+        condition: service_started
+
+    healthcheck:
+        test:
+            [
+            "CMD",
+            "node",
+            "-e",
+            "fetch('http://127.0.0.1:3001/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+            ]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+        start_period: 10s
+
+
+  telemetry-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: iot-telemetry-worker
+    restart: unless-stopped
+
+    environment:
+      APP_NAME: telemetry-worker
+
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+      LOG_LEVEL: info
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+      otel-collector:
+        condition: service_started
+
+
+  anomaly-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: iot-anomaly-worker
+    restart: unless-stopped
+
+    environment:
+      APP_NAME: anomaly-worker
+
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+      LOG_LEVEL: info
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+      otel-collector:
+        condition: service_started
+
+
+  alert-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: iot-alert-worker
+    restart: unless-stopped
+
+    environment:
+      APP_NAME: alert-worker
+
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+      LOG_LEVEL: info
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+      otel-collector:
+        condition: service_started
+
+
+  device-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: iot-device-simulator
+    restart: unless-stopped
+
+    environment:
+      APP_NAME: device-simulator
+
+      INGESTION_API_URL: http://ingestion-api:3001
+
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+    depends_on:
+      ingestion-api:
+        condition: service_healthy
+
 
 volumes:
-    rabbitmq_data:
+  rabbitmq_data:

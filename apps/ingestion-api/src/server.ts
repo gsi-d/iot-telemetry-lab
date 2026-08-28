@@ -2,6 +2,8 @@ import Fastify from "fastify";
 import { telemetryRoutes } from "./routes/telemetry.js";
 import { connectRabbitMQ } from "./messaging/rabbitmq.js";
 
+const port = Number(process.env.PORT ?? 3001);
+
 const app = Fastify({
   logger: true
 });
@@ -18,7 +20,7 @@ await app.register(telemetryRoutes);
 
 try {
   await app.listen({
-    port: 3000,
+    port,
     host: "0.0.0.0"
   });
 
