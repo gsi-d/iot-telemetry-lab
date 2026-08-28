@@ -37,6 +37,11 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+      - "8889:8889"
+
+    depends_on:
+        - tempo
+        - loki
 
 
   ingestion-api:
@@ -174,6 +179,88 @@ services:
       ingestion-api:
         condition: service_healthy
 
+  tempo:
+    image: grafana/tempo:2.10.7
+    container_name: iot-tempo
+    restart: unless-stopped
+
+    command:
+      - "-config.file=/etc/tempo.yaml"
+
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+
+    ports:
+      - "3200:3200"
+
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: iot-prometheus
+    restart: unless-stopped
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+    ports:
+      - "9090:9090"
+
+    depends_on:
+      - otel-collector
+
+
+  loki:
+    image: grafana/loki:3.7.6
+    container_name: iot-loki
+    restart: unless-stopped
+
+    command:
+      - "-config.file=/etc/loki/local-config.yaml"
+
+    volumes:
+      - ./infra/loki/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+
+    ports:
+      - "3100:3100"
+
+
+  grafana:
+    image: grafana/grafana:13.1.3
+    container_name: iot-grafana
+    restart: unless-stopped
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
 
 volumes:
+
   rabbitmq_data:
+
+  tempo_data:
+
+  prometheus_data:
+
+  loki_data:
+
+  grafana_data:
