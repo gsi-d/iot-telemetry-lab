@@ -37,6 +37,7 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+      - "8888:8888"
       - "8889:8889"
 
     depends_on:
@@ -203,6 +204,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"
 
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -244,6 +246,7 @@ services:
       - grafana_data:/var/lib/grafana
 
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
 
     ports:
       - "3000:3000"
